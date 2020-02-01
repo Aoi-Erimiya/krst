@@ -1,4 +1,4 @@
-﻿open System
+open System
 
 type Color = Yellow | Red | Blue | Green | Purple
 
@@ -33,9 +33,16 @@ type CardList(cardList:List<CardHolder>) =
         for card in cards do
             card.Close()
 
-    member x.Add(addCard:Card) =
-        cards <- List.append [addCard]
+    member x.Add(addCard:CardHolder) =
+        cards <- List.append [addCard] cards
 
+    member x.Remove(removeCard:CardHolder) =
+        let findIndex = cards |> List.tryFindIndex(fun elm -> elm.Card = removeCard.Card)
+        if findIndex.IsNone then
+            false
+        else
+            cards <- List.append cards.[.. findIndex.Value] cards.[findIndex.Value + 1 ..]
+            true
 
 type CardDefine() =
     let cardMaxNumber = 7
