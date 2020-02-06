@@ -9,82 +9,103 @@ type Card(color:Color, number:int) =
     member x.Color with get() = cardColor
     member x.Number with get() = cardNumber
 
+    override x.ToString() = sprintf "%A:%d" cardColor cardNumber
+
 type CardHolder(card:Card) = 
     let card = card
-    let mutable isOpen = false
-    let mutable isKnown = false
+    let isOpen = false
+    let isKnown = false
 
     member x.Card with get() = card
     member x.IsOpen with get() = isOpen
     member x.IsKnown with get() = isKnown
 
-    member x.Open() = isOpen <- true
-    member x.Close() = isOpen <- false 
-    member x.Known() = isKnown <- true
+type Player(hideCard:Card, handCards, askedHitCards, askedNoHitCards) =
+    let hideCard = hideCard
+    let handCards = handCards
+    let askedHitCards = askedHitCards
+    let askedNoHitCards = askedNoHitCards
 
-type CardList(cardList:List<CardHolder>) = 
-    let mutable cards = cardList
+    member x.HideCard with get() = hideCard
+    member x.HandCards with get() = handCards
+    member x.AskedHitCards with get() = askedHitCards
+    member x.AskedNoHitCards with get() = askedNoHitCards
 
-    member x.OpenAll() = 
-        for card in cards do
-            card.Open()
+    override x.ToString() = sprintf "%A/%A/%A/%A" hideCard handCards askedHitCards askedNoHitCards
 
-    member x.CloseAll() =
-        for card in cards do
-            card.Close()
+let cardList = [
+  for i in 1..7 do
+    yield Card(Red, i)
+    yield Card(Blue, i)
+    yield Card(Green, i)
+  ]
 
-    member x.Add(addCard:CardHolder) =
-        cards <- List.append [addCard] cards
+let isKnown(cardA:Card, cardB:Card) =
+  cardA.Color = cardB.Color || cardA.Number = cardB.Number
 
-    member x.Remove(removeCard:CardHolder) =
-        let findIndex = cards |> List.tryFindIndex(fun elm -> elm.Card = removeCard.Card)
-        if findIndex.IsNone then
-            false
-        else
-            cards <- List.append cards.[.. findIndex.Value] cards.[findIndex.Value + 1 ..]
-            true
+let hitCard(player:Player, askCard) =
+    let askedAfterHitCards = List.append player.AskedHitCards [askCard]
+    Player(player.HideCard, player.HandCards, askedAfterHitCards, player.AskedNoHitCards)
 
-type CardDefine() =
-    let cardMaxNumber = 7
-    let cardMinNumber = 1
+let noHitCard(player:Player, askCard) =
+    let askedAfterNoHitCards = List.append player.AskedNoHitCards [askCard]
+    Player(player.HideCard, player.HandCards, player.AskedHitCards, askedAfterNoHitCards)
 
-    let playerMinCount = 2
-    let playerMaxCount = 6
+let phase(player:Player, enemy:Player) =
+  let askCard =
+   player.HandCards
+    |> List.sortBy(fun _ -> Guid.NewGuid())
+    |> List.head
+
+  let askCardIndex = 
+    (player.HandCards
+      |> List.tryFindIndex(fun x -> isKnown(askCard, x))).Value
+
+  let askAfterHandCards =
+    List.append player.HandCards.[.. askCardIndex] player.HandCards.[askCardIndex + 1 ..]
+
+  let retPlayer = Player(player.HideCard, askAfterHandCards, player.AskedHitCards, player.AskedNoHitCards)
+
+  let retEnemy = 
+    if isKnown(askCard, enemy.HideCard) then
+      hitCard(enemy, askCard)
+    else
+      noHitCard(enemy, askCard)
+
+  (retPlayer, retEnemy)
+
+let printPlayers p1 p2 p3 =
+  [p1; p2; p3] |> List.iter(fun x -> printfn "%A" x)
+
+printfn "*** FBK-START ***"
+
+let shuffledCards =
+  cardList
+  |> List.sortBy(fun _ -> Guid.NewGuid())
+
+let chunkedCards = shuffledCards |> List.chunkBySize 7
+
+let mutable p1 = Player(chunkedCards.[0].Head, chunkedCards.[0].Tail, [], [])
+let mutable p2 = Player(chunkedCards.[1].Head, chunkedCards.[1].Tail, [], [])
+let mutable p3 = Player(chunkedCards.[2].Head, chunkedCards.[2].Tail, [], [])
+
+printPlayers p1 p2 p3
+
+let fst, snd = phase(p1, p2)
+p1 <- fst
+p2 <- snd
+
+let snd2, thd = phase(p2, p3)
+p2 <- snd2
+p3 <- thd
+
+let thd2, fst2  = phase(p3, p1)
+p3 <- thd2
+p1 <- fst2
+
+printPlayers p1 p2 p3
+
+// players |> List.iter(fun x -> printfn "%A" x)
 
 
-
-    
-
-
-type Player
-
-type PlayerList
-
-type CardBuilder() =
-    let makeDeck() =
-        let colors = [Yellow ; Red ; Blue; Green; Purple]
-        for i in 1 .. 7 do
-            
-
-           
-
-type Judgementer() =
-    let judgement(card:Card, color:Color, number:int) =
-        return card.color == color && card.number == number
-
-type GameMaster() =
-    let turn:int
-    let playerList:List<Player>
-    let judgement()
-    let run()
-    let makeDeck()
-    let makePlayer()
-
-
-[<EntryPoint>]
-let main argv =
-    Console.Error.WriteLine("*** FBK-START ***") 
- 
- 
-    Console.Error.WriteLine("*** FBK-END ***") 
-    0
+printfn "*** FBK-END ***"
