@@ -43,34 +43,38 @@ let cardList = [
 let isKnown(cardA:Card, cardB:Card) =
   cardA.Color = cardB.Color || cardA.Number = cardB.Number
 
-let hitCard(player:Player, askCard) =
+let rebuildAskedHitPlayer(player:Player, askCard) =
     let askedAfterHitCards = List.append player.AskedHitCards [askCard]
     Player(player.HideCard, player.HandCards, askedAfterHitCards, player.AskedNoHitCards)
 
-let noHitCard(player:Player, askCard) =
+let rebuildAskedNoHitPlayer(player:Player, askCard) =
     let askedAfterNoHitCards = List.append player.AskedNoHitCards [askCard]
     Player(player.HideCard, player.HandCards, player.AskedHitCards, askedAfterNoHitCards)
 
-let phase(player:Player, enemy:Player) =
-  let askCard =
+let selectAskCard(player:Player) =
    player.HandCards
     |> List.sortBy(fun _ -> Guid.NewGuid())
     |> List.head
 
+let removeAskCardFromHandCards(player:Player, askCard) =
   let askCardIndex = 
     (player.HandCards
       |> List.tryFindIndex(fun x -> isKnown(askCard, x))).Value
 
-  let askAfterHandCards =
-    List.append player.HandCards.[.. askCardIndex] player.HandCards.[askCardIndex + 1 ..]
+  List.append player.HandCards.[.. askCardIndex] player.HandCards.[askCardIndex + 1 ..]
 
-  let retPlayer = Player(player.HideCard, askAfterHandCards, player.AskedHitCards, player.AskedNoHitCards)
+let rebuildAskPlayer(player:Player, askAfterHandCards) =
+    Player(player.HideCard, askAfterHandCards, player.AskedHitCards, player.AskedNoHitCards)
+
+let phase(player:Player, enemy:Player) =
+  let askCard = selectAskCard(player)
+  let retPlayer = rebuildAskPlayer(player, removeAskCardFromHandCards(player, askCard))
 
   let retEnemy = 
     if isKnown(askCard, enemy.HideCard) then
-      hitCard(enemy, askCard)
+      rebuildAskedHitPlayer(enemy, askCard)
     else
-      noHitCard(enemy, askCard)
+      rebuildAskedNoHitPlayer(enemy, askCard)
 
   (retPlayer, retEnemy)
 
