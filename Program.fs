@@ -9,7 +9,7 @@ type Card(color:Color, number:int) =
     member x.Color with get() = cardColor
     member x.Number with get() = cardNumber
 
-    override x.ToString() = sprintf "%A:%d" cardColor cardNumber
+    override x.ToString() = sprintf "%A%d" cardColor cardNumber
 
 type CardHolder(card:Card) = 
     let card = card
@@ -52,16 +52,14 @@ let rebuildAskedNoHitPlayer(player:Player, askCard) =
     Player(player.HideCard, player.HandCards, player.AskedHitCards, askedAfterNoHitCards)
 
 let selectAskCard(player:Player) =
-   player.HandCards
-    |> List.sortBy(fun _ -> Guid.NewGuid())
-    |> List.head
+    player.HandCards |> List.minBy(fun _ -> Guid.NewGuid())
 
 let removeAskCardFromHandCards(player:Player, askCard) =
   let askCardIndex = 
     (player.HandCards
       |> List.tryFindIndex(fun x -> isKnown(askCard, x))).Value
 
-  List.append player.HandCards.[.. askCardIndex] player.HandCards.[askCardIndex + 1 ..]
+  List.append player.HandCards.[.. askCardIndex - 1] player.HandCards.[askCardIndex + 1 ..]
 
 let rebuildAskPlayer(player:Player, askAfterHandCards) =
     Player(player.HideCard, askAfterHandCards, player.AskedHitCards, player.AskedNoHitCards)
@@ -81,6 +79,19 @@ let phase(player:Player, enemy:Player) =
 let printPlayers p1 p2 p3 =
   [p1; p2; p3] |> List.iter(fun x -> printfn "%A" x)
 
+let rec play(p1, p2, p3) =
+    printfn "---"
+    let fst, snd = phase(p1, p2)
+    let snd2, thd = phase(snd, p3)
+    let thd2, fst2  = phase(thd, fst)
+
+    printPlayers fst2 snd2 thd2
+    if thd2.HandCards.Length = 0 then
+        ()
+    else
+        play(fst2, snd2, thd2)
+     
+
 printfn "*** FBK-START ***"
 
 let shuffledCards =
@@ -95,21 +106,6 @@ let mutable p3 = Player(chunkedCards.[2].Head, chunkedCards.[2].Tail, [], [])
 
 printPlayers p1 p2 p3
 
-let fst, snd = phase(p1, p2)
-p1 <- fst
-p2 <- snd
-
-let snd2, thd = phase(p2, p3)
-p2 <- snd2
-p3 <- thd
-
-let thd2, fst2  = phase(p3, p1)
-p3 <- thd2
-p1 <- fst2
-
-printPlayers p1 p2 p3
-
-// players |> List.iter(fun x -> printfn "%A" x)
-
+play(p1, p2, p3)
 
 printfn "*** FBK-END ***"
