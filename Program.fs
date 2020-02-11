@@ -40,56 +40,55 @@ let cardList = [
     yield Card(Green, i)
   ]
 
-let isKnown(cardA:Card, cardB:Card) =
+let isKnown (cardA:Card) (cardB:Card) =
   cardA.Color = cardB.Color || cardA.Number = cardB.Number
 
-let rebuildAskedHitPlayer(player:Player, askCard) =
+let rebuildAskedHitPlayer (player:Player) askCard =
     let askedAfterHitCards = List.append player.AskedHitCards [askCard]
     Player(player.HideCard, player.HandCards, askedAfterHitCards, player.AskedNoHitCards)
 
-let rebuildAskedNoHitPlayer(player:Player, askCard) =
+let rebuildAskedNoHitPlayer (player:Player) askCard =
     let askedAfterNoHitCards = List.append player.AskedNoHitCards [askCard]
     Player(player.HideCard, player.HandCards, player.AskedHitCards, askedAfterNoHitCards)
 
-let selectAskCard(player:Player) =
+let selectAskCard (player:Player) =
     player.HandCards |> List.minBy(fun _ -> Guid.NewGuid())
 
-let removeAskCardFromHandCards(player:Player, askCard) =
-  let askCardIndex = 
-    (player.HandCards
-      |> List.tryFindIndex(fun x -> isKnown(askCard, x))).Value
+let removeAskCardFromHandCards (player:Player) askCard =
+    player.HandCards |> List.except [askCard]
 
-  List.append player.HandCards.[.. askCardIndex - 1] player.HandCards.[askCardIndex + 1 ..]
+let buildPlayer (handCards:Card list) =
+    Player(handCards.Head, handCards.Tail, [], [])
 
-let rebuildAskPlayer(player:Player, askAfterHandCards) =
+let rebuildAskPlayer (player:Player) askAfterHandCards =
     Player(player.HideCard, askAfterHandCards, player.AskedHitCards, player.AskedNoHitCards)
 
-let phase(player:Player, enemy:Player) =
-  let askCard = selectAskCard(player)
-  let retPlayer = rebuildAskPlayer(player, removeAskCardFromHandCards(player, askCard))
+let phase (player:Player) (enemy:Player) =
+  let askCard = selectAskCard player
+  let retPlayer = rebuildAskPlayer player (removeAskCardFromHandCards player askCard)
 
   let retEnemy = 
-    if isKnown(askCard, enemy.HideCard) then
-      rebuildAskedHitPlayer(enemy, askCard)
+    if isKnown askCard enemy.HideCard then
+      rebuildAskedHitPlayer enemy askCard
     else
-      rebuildAskedNoHitPlayer(enemy, askCard)
+      rebuildAskedNoHitPlayer enemy askCard
 
   (retPlayer, retEnemy)
 
 let printPlayers p1 p2 p3 =
   [p1; p2; p3] |> List.iter(fun x -> printfn "%A" x)
 
-let rec play(p1, p2, p3) =
+let rec play p1 p2 p3 =
     printfn "---"
-    let fst, snd = phase(p1, p2)
-    let snd2, thd = phase(snd, p3)
-    let thd2, fst2  = phase(thd, fst)
+    let fst, snd = phase p1 p2
+    let snd2, thd = phase snd p3
+    let thd2, fst2  = phase thd fst
 
     printPlayers fst2 snd2 thd2
     if thd2.HandCards.Length = 0 then
         ()
     else
-        play(fst2, snd2, thd2)
+        play fst2 snd2 thd2
      
 
 printfn "*** FBK-START ***"
@@ -98,14 +97,13 @@ let shuffledCards =
   cardList
   |> List.sortBy(fun _ -> Guid.NewGuid())
 
-let chunkedCards = shuffledCards |> List.chunkBySize 7
-
-let mutable p1 = Player(chunkedCards.[0].Head, chunkedCards.[0].Tail, [], [])
-let mutable p2 = Player(chunkedCards.[1].Head, chunkedCards.[1].Tail, [], [])
-let mutable p3 = Player(chunkedCards.[2].Head, chunkedCards.[2].Tail, [], [])
+let chunkedCards = shuffledCards |> List.chunkBySize 7 
+let p1 = buildPlayer chunkedCards.[0]
+let p2 = buildPlayer chunkedCards.[1]
+let p3 = buildPlayer chunkedCards.[2]
 
 printPlayers p1 p2 p3
 
-play(p1, p2, p3)
+play p1 p2 p3
 
 printfn "*** FBK-END ***"
