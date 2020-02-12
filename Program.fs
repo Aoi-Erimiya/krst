@@ -20,7 +20,7 @@ type CardHolder(card:Card) =
     member x.IsOpen with get() = isOpen
     member x.IsKnown with get() = isKnown
 
-type Player(hideCard:Card, handCards, askedHitCards, askedNoHitCards) =
+type Player(hideCard:Card, handCards:Card list, askedHitCards:Card list, askedNoHitCards:Card list) =
     let hideCard = hideCard
     let handCards = handCards
     let askedHitCards = askedHitCards
@@ -52,7 +52,7 @@ let rebuildAskedNoHitPlayer (player:Player) askCard =
     Player(player.HideCard, player.HandCards, player.AskedHitCards, askedAfterNoHitCards)
 
 let selectAskCard (player:Player) =
-    player.HandCards |> List.minBy(fun _ -> Guid.NewGuid())
+    player.HandCards |> List.item (Random().Next(0, player.HandCards.Length))
 
 let removeAskCardFromHandCards (player:Player) askCard =
     player.HandCards |> List.except [askCard]
