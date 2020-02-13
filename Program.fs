@@ -75,13 +75,13 @@ let phase (player:Player) (enemy:Player) =
 
   (retPlayer, retEnemy)
 
-let printPlayers p1 p2 p3 =
-  [p1; p2; p3] |> List.iter(fun x -> printfn "%A" x)
+let printPlayers player1 player2 player3 =
+  [player1; player2; player3] |> List.iter(fun x -> printfn "%A" x)
 
-let rec play p1 p2 p3 =
+let rec play player1 player2 player3 =
     printfn "---"
-    let fst, snd = phase p1 p2
-    let snd2, thd = phase snd p3
+    let fst, snd = phase player1 player2
+    let snd2, thd = phase snd player3
     let thd2, fst2  = phase thd fst
 
     printPlayers fst2 snd2 thd2
@@ -98,12 +98,12 @@ let shuffledCards =
   |> List.sortBy(fun _ -> Guid.NewGuid())
 
 let chunkedCards = shuffledCards |> List.chunkBySize 7 
-let p1 = buildPlayer chunkedCards.[0]
-let p2 = buildPlayer chunkedCards.[1]
-let p3 = buildPlayer chunkedCards.[2]
+let player1 = buildPlayer chunkedCards.[0]
+let player2 = buildPlayer chunkedCards.[1]
+let player3 = buildPlayer chunkedCards.[2]
 
-printPlayers p1 p2 p3
+printPlayers player1 player2 player3
 
-play p1 p2 p3
+play player1 player2 player3
 
 printfn "*** FBK-END ***"
