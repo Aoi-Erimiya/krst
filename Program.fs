@@ -33,11 +33,29 @@ type Player(hideCard:Card, handCards:Card list, askedHitCards:Card list, askedNo
 
     override x.ToString() = sprintf "%A/%A/%A/%A" hideCard handCards askedHitCards askedNoHitCards
 
-let cardList = [
-  for i in 1..7 do
-    yield Card(Red, i)
-    yield Card(Blue, i)
-    yield Card(Green, i)
+let buildCardList numberOfPlayers = [
+    match numberOfPlayers with
+    | 3 ->
+        for i in 1..7 do
+            yield Card(Red, i)
+            yield Card(Blue, i)
+            yield Card(Green, i)
+    | 4 ->
+        for i in 1..7 do
+            yield Card(Red, i)
+            yield Card(Blue, i)
+            yield Card(Green, i)
+            yield Card(Yellow, i)
+    | 5
+    | 6 ->
+        for i in 1..7 do
+            yield Card(Red, i)
+            yield Card(Blue, i)
+            yield Card(Green, i)
+            yield Card(Yellow, i)
+            yield Card(Purple, i)
+    | _ ->
+        failwithf "Set the number of players between 3 and 6!"
   ]
 
 let isKnown (cardA:Card) (cardB:Card) =
@@ -75,7 +93,7 @@ let duel (turnPlayer:Player) (otherPlayers:Player list) =
     else
       rebuildAskedNoHitPlayer enemy askCard
 
-  List.append [retPlayer] [retEnemy] |> List.append otherPlayers.Tail
+  List.append otherPlayers.Tail [retPlayer] |> List.append [retEnemy]
 
 let printPlayers players =
   players |> List.iter(fun x -> printfn "%A" x)
@@ -94,10 +112,13 @@ let rec play (players:Player list) =
 let main =
     printfn "*** FBK-START ***"
 
+    let numberOfPlayers = 4
+    let cards = (buildCardList numberOfPlayers)
+
     let players =
-        cardList
+        cards
         |> List.sortBy(fun _ -> Guid.NewGuid())
-        |> List.chunkBySize 7 
+        |> List.chunkBySize (cards.Length / numberOfPlayers) 
         |> List.map(fun cards -> (buildPlayer cards))
 
     printPlayers players
