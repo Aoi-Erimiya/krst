@@ -63,9 +63,11 @@ let buildPlayer (handCards:Card list) =
 let rebuildAskPlayer (player:Player) askAfterHandCards =
     Player(player.HideCard, askAfterHandCards, player.AskedHitCards, player.AskedNoHitCards)
 
-let phase (player:Player) (enemy:Player) =
-  let askCard = selectAskCard player
-  let retPlayer = rebuildAskPlayer player (removeAskCardFromHandCards player askCard)
+let duel (turnPlayer:Player) (otherPlayers:Player list) =
+  let askCard = selectAskCard turnPlayer
+  let retPlayer = rebuildAskPlayer turnPlayer (removeAskCardFromHandCards turnPlayer askCard)
+
+  let enemy = otherPlayers.Head
 
   let retEnemy = 
     if isKnown askCard enemy.HideCard then
@@ -73,37 +75,35 @@ let phase (player:Player) (enemy:Player) =
     else
       rebuildAskedNoHitPlayer enemy askCard
 
-  (retPlayer, retEnemy)
+  List.append [retPlayer] [retEnemy] |> List.append otherPlayers.Tail
 
-let printPlayers player1 player2 player3 =
-  [player1; player2; player3] |> List.iter(fun x -> printfn "%A" x)
+let printPlayers players =
+  players |> List.iter(fun x -> printfn "%A" x)
 
-let rec play player1 player2 player3 =
+let rec play (players:Player list) =
     printfn "---"
-    let fst, snd = phase player1 player2
-    let snd2, thd = phase snd player3
-    let thd2, fst2  = phase thd fst
 
-    printPlayers fst2 snd2 thd2
-    if thd2.HandCards.Length = 0 then
+    let retPlayers = duel players.Head players.Tail
+    printPlayers retPlayers
+
+    if retPlayers.Head.HandCards.Length = 0 then
         ()
     else
-        play fst2 snd2 thd2
-     
+        play retPlayers
 
-printfn "*** FBK-START ***"
+let main =
+    printfn "*** FBK-START ***"
 
-let shuffledCards =
-  cardList
-  |> List.sortBy(fun _ -> Guid.NewGuid())
+    let players =
+        cardList
+        |> List.sortBy(fun _ -> Guid.NewGuid())
+        |> List.chunkBySize 7 
+        |> List.map(fun cards -> (buildPlayer cards))
 
-let chunkedCards = shuffledCards |> List.chunkBySize 7 
-let player1 = buildPlayer chunkedCards.[0]
-let player2 = buildPlayer chunkedCards.[1]
-let player3 = buildPlayer chunkedCards.[2]
+    printPlayers players
 
-printPlayers player1 player2 player3
+    play players
 
-play player1 player2 player3
+    printfn "*** FBK-END ***"
 
-printfn "*** FBK-END ***"
+main
