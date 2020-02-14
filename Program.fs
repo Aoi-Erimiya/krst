@@ -9,7 +9,8 @@ type Card(color:Color, number:int) =
     member x.Color with get() = cardColor
     member x.Number with get() = cardNumber
 
-    override x.ToString() = sprintf "%A%d" cardColor cardNumber
+    override x.ToString() = 
+        sprintf "%c%d" ((sprintf "%A" cardColor).Chars 0) cardNumber
 
 type CardHolder(card:Card) = 
     let card = card
@@ -31,7 +32,7 @@ type Player(hideCard:Card, handCards:Card list, askedHitCards:Card list, askedNo
     member x.AskedHitCards with get() = askedHitCards
     member x.AskedNoHitCards with get() = askedNoHitCards
 
-    override x.ToString() = sprintf "%A/%A/%A/%A" hideCard handCards askedHitCards askedNoHitCards
+    override x.ToString() = sprintf "%A-%A->%A/%A" hideCard handCards askedHitCards askedNoHitCards
 
 let buildCardList numberOfPlayers = [
     match numberOfPlayers with
