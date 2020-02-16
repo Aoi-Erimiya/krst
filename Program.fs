@@ -82,6 +82,26 @@ let buildPlayer (handCards:Card list) =
 let rebuildAskPlayer (player:Player) askAfterHandCards =
     Player(player.HideCard, askAfterHandCards, player.AskedHitCards, player.AskedNoHitCards)
 
+let think (turnPlayer:Player) (otherPlayers:Player list) =
+    let openCards =
+        List.append [turnPlayer] otherPlayers
+         |> List.map(fun player -> List.append player.AskedHitCards player.AskedNoHitCards) 
+         |> List.append [turnPlayer.HandCards]
+         |> List.concat
+         |> List.append [turnPlayer.HideCard]
+
+    let enemyHitCards = otherPlayers.Head.AskedHitCards
+    enemyHitCards
+    // 相手のhitCardを見る
+    // 同じ数字のものが複数ある？→あれば数字側
+    // では同じ数字で出ていない勢力を探す
+    // 出ていない勢力が1種である→特定
+    // 出ていない勢力が複数ある→ではhitCardで違う数字のものは同勢力である　→　特定
+    // 同じ勢力が複数ある？→あれば勢力で絞る
+    // 残っている数字が1種である→特定
+    // これで特定できない場合は、自分の手札が1枚以上あるなら待つ
+
+    
 let duel (turnPlayer:Player) (otherPlayers:Player list) =
   let askCard = selectAskCard turnPlayer
   let retPlayer = rebuildAskPlayer turnPlayer (removeAskCardFromHandCards turnPlayer askCard)
