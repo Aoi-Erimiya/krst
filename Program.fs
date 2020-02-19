@@ -83,6 +83,7 @@ let rebuildAskPlayer (player:Player) askAfterHandCards =
     Player(player.HideCard, askAfterHandCards, player.AskedHitCards, player.AskedNoHitCards)
 
 let think (turnPlayer:Player) (otherPlayers:Player list) =
+    // 見えるカードを全部まとめる
     let openCards =
         List.append [turnPlayer] otherPlayers
          |> List.map(fun player -> List.append player.AskedHitCards player.AskedNoHitCards) 
@@ -90,17 +91,57 @@ let think (turnPlayer:Player) (otherPlayers:Player list) =
          |> List.concat
          |> List.append [turnPlayer.HideCard]
 
-    let enemyHitCards = otherPlayers.Head.AskedHitCards
-    enemyHitCards
     // 相手のhitCardを見る
-    // 同じ数字のものが複数ある？→あれば数字側
-    // では同じ数字で出ていない勢力を探す
-    // 出ていない勢力が1種である→特定
-    // 出ていない勢力が複数ある→ではhitCardで違う数字のものは同勢力である　→　特定
-    // 同じ勢力が複数ある？→あれば勢力で絞る
-    // 残っている数字が1種である→特定
-    // これで特定できない場合は、自分の手札が1枚以上あるなら待つ
+    let enemyHitCards = otherPlayers.Head.AskedHitCards
 
+    // 同じ数字のものが複数ある？→あれば数字側
+    let maxNumber =
+        fst(
+            enemyHitCards
+            |> List.countBy(fun card -> card.Number)
+            |> List.maxBy (fun n -> 
+                let fst, snd = n
+                snd)
+        )
+
+    if maxNumber > 1 then
+        // では同じ数字で出ていない勢力を探す
+        let openColors = 
+            openCards
+                |> List.choose(fun card -> if card.Number = maxNumber then Some(card) else None)
+                |> List.map(fun card -> card.Color)
+        
+        let rejectColors =
+            [Color.Red; Color.Blue; Color.Green; Color.Yellow]
+            |> List.except openColors
+        
+        // 出ていない勢力が1種である→特定
+        if rejectColors.Length = 1 then
+            Card(rejectColors.Head, maxNumber)
+        else
+            None
+    // 出ていない勢力が複数ある→ではhitCardで違う数字のものは同勢力である　→　特定
+
+    // 同じ勢力が複数ある？→あれば勢力で絞る
+    let maxColor =
+        fst(
+            enemyHitCards
+            |> List.countBy(fun card -> card.Color)
+            |> List.maxBy (fun n -> 
+                let fst, snd = n
+                snd)
+        )
+
+    // 残っている数字が1種である→特定
+    let rejectNumbers = 
+        [1 .. 7]
+        |> List.except (openCards |> List.filter(fun card -> card.Number = maxColor))
+    
+    if rejectNumbers.Length = 1 then
+         Card(maxColor, rejectNumbers.Head) else None
+    
+    // これで特定できない場合は、自分の手札が1枚以上あるなら待つ
+    
     
 let duel (turnPlayer:Player) (otherPlayers:Player list) =
   let askCard = selectAskCard turnPlayer
